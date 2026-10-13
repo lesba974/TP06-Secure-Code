@@ -13,8 +13,8 @@ jobs:
   python-security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@<SHA>  
-      - uses: actions/setup-python@<SHA>   
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97   
         with:
           python-version: "3.12"
       - name: Installer les dépendances
@@ -31,19 +31,19 @@ jobs:
   secrets-scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@<SHA>   
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@<SHA>  
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   trivy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@<SHA>  
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 
       - name: Scan des dépendances et de la config
-        uses: aquasecurity/trivy-action@<SHA> 
+        uses: aquasecurity/trivy-action@1f0aa582c8c8f5f7639610d6d38baddfea4fdcee 
         with:
           scan-type: fs
           scan-ref: app
@@ -52,7 +52,7 @@ jobs:
       - name: Build de l'image
         run: docker build -t minishop:ci app/
       - name: Scan de l'image
-        uses: aquasecurity/trivy-action@<SHA>   
+        uses: aquasecurity/trivy-action@1f0aa582c8c8f5f7639610d6d38baddfea4fdcee
         with:
           image-ref: minishop:ci
           severity: HIGH,CRITICAL
@@ -62,15 +62,15 @@ jobs:
   sbom:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@<SHA>  
-      - uses: actions/setup-python@<SHA>  
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 
         with:
           python-version: "3.12"
       - name: Générer le SBOM CycloneDX
         run: |
           pip install cyclonedx-bom
           cyclonedx-py requirements app/requirements.txt --of JSON -o sbom.cdx.json
-      - uses: actions/upload-artifact@<SHA>   
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  
         with:
           name: sbom
           path: sbom.cdx.json
