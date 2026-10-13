@@ -43,7 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 
       - name: Scan des dépendances et de la config
-        uses: aquasecurity/trivy-action@1f0aa582c8c8f5f7639610d6d38baddfea4fdcee 
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 
         with:
           scan-type: fs
           scan-ref: app
@@ -52,7 +52,7 @@ jobs:
       - name: Build de l'image
         run: docker build -t minishop:ci app/
       - name: Scan de l'image
-        uses: aquasecurity/trivy-action@1f0aa582c8c8f5f7639610d6d38baddfea4fdcee
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           image-ref: minishop:ci
           severity: HIGH,CRITICAL
