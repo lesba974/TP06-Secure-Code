@@ -1,0 +1,76 @@
+name: security
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 6 * * *"   
+
+permissions:
+  contents: read
+
+jobs:
+  python-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<SHA>  
+      - uses: actions/setup-python@<SHA>   
+        with:
+          python-version: "3.12"
+      - name: Installer les dépendances
+        run: pip install -r app/requirements.txt pytest bandit pip-audit
+      - name: Tests (attaque + fonctionnels)
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        run: pytest -q tests
+      - name: Bandit
+        run: bandit -r app -ll
+      - name: pip-audit
+        run: pip-audit -r app/requirements.txt
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<SHA>   
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@<SHA>  
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  trivy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<SHA>  
+      - name: Scan des dépendances et de la config
+        uses: aquasecurity/trivy-action@<SHA> 
+        with:
+          scan-type: fs
+          scan-ref: app
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+      - name: Build de l'image
+        run: docker build -t minishop:ci app/
+      - name: Scan de l'image
+        uses: aquasecurity/trivy-action@<SHA>   
+        with:
+          image-ref: minishop:ci
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<SHA>  
+      - uses: actions/setup-python@<SHA>  
+        with:
+          python-version: "3.12"
+      - name: Générer le SBOM CycloneDX
+        run: |
+          pip install cyclonedx-bom
+          cyclonedx-py requirements app/requirements.txt --of JSON -o sbom.cdx.json
+      - uses: actions/upload-artifact@<SHA>   
+        with:
+          name: sbom
+          path: sbom.cdx.json
