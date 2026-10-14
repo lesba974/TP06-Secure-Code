@@ -4,17 +4,16 @@ Ne jamais déployer ce code tel quel. Votre mission : le rendre conforme.
 Documentation interactive : http://localhost:5000/docs
 """
 import ast
-import base64
 import hashlib
 import logging
 import os
-import pickle
 import random
 import sqlite3
 import subprocess
 import traceback
 import operator
 
+from pydantic import BaseModel
 import requests
 import uvicorn
 import yaml
@@ -172,10 +171,14 @@ async def import_yaml(request: Request):
     return {"keys": list(cfg.keys()) if isinstance(cfg, dict) else str(type(cfg))}
 
 
+class Profile(BaseModel):
+    username: str
+    email: str
+
+
 @app.post("/import-profile")
-async def import_profile(request: Request):
-    profile = pickle.loads(base64.b64decode(await request.body()))
-    return {"profile": str(profile)}
+def import_profile(profile: Profile):
+    return {"profile": profile.model_dump()}
 
 
 @app.get("/fetch")
