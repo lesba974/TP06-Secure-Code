@@ -12,11 +12,11 @@ import sqlite3
 import subprocess
 import traceback
 import operator
-
-from pydantic import BaseModel
+import html
 import requests
 import uvicorn
 import yaml
+from pydantic import BaseModel
 from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse
 from starlette.middleware.sessions import SessionMiddleware
@@ -122,7 +122,7 @@ def ping(host: str = "127.0.0.1"):
 
 @app.get("/hello")
 def hello(name: str = ""):
-    return HTMLResponse(f"<h1>Bonjour {name}</h1>")
+    return HTMLResponse(f"<h1>Bonjour {html.escape(name)}</h1>")
 
 UPLOAD_PATH = Path(UPLOAD_DIR).resolve()
 
