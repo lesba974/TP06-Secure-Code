@@ -22,6 +22,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTex
 from starlette.middleware.sessions import SessionMiddleware
 from ipaddress import ip_address
 from pathlib import Path
+from urllib.parse import urlparse
 
 SECRET_KEY = "super-secret-key-123"
 DB_PATH = os.environ.get("DB_PATH", "shop.db")
@@ -185,10 +186,17 @@ class Profile(BaseModel):
 def import_profile(profile: Profile):
     return {"profile": profile.model_dump()}
 
+ALLOWED_HOSTS = {"example.com"}
 
 @app.get("/fetch")
 def fetch(url: str):
-    r = requests.get(url, verify=False)
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or parsed.hostname not in ALLOWED_HOSTS:
+        raise HTTPException(status_code=400, detail="url not allowed")
+    try:
+        r = requests.get(url, timeout=5, verify=True, allow_redirects=False)
+    except requests.RequestException:
+        raise HTTPException(status_code=502, detail="upstream error")
     return PlainTextResponse(r.text[:500])
 
 
