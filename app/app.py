@@ -3,6 +3,7 @@
 Ne jamais déployer ce code tel quel. Votre mission : le rendre conforme.
 Documentation interactive : http://localhost:5000/docs
 """
+import ast
 import base64
 import hashlib
 import logging
@@ -12,6 +13,7 @@ import random
 import sqlite3
 import subprocess
 import traceback
+import operator
 
 import requests
 import uvicorn
@@ -127,10 +129,38 @@ def hello(name: str = ""):
 def get_file(name: str):
     return FileResponse(os.path.join(UPLOAD_DIR, name))
 
+OPS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+}
+
+def safe_eval(node):
+    if isinstance(node, ast.Expression):
+        return safe_eval(node.body)
+    if (isinstance(node, ast.Constant)
+            and isinstance(node.value, (int, float))
+            and not isinstance(node.value, bool)):
+        return node.value
+    if isinstance(node, ast.BinOp) and type(node.op) in OPS:
+        return OPS[type(node.op)](safe_eval(node.left), safe_eval(node.right))
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.USub, ast.UAdd)):
+        value = safe_eval(node.operand)
+        return -value if isinstance(node.op, ast.USub) else value
+    raise ValueError("expression not allowed")
+
 
 @app.post("/calc")
 def calc(data: dict = Body(...)):
-    return {"result": str(eval(data["expr"]))}
+    expr = data.get("expr")
+    if not isinstance(expr, str) or len(expr) > 200:
+        raise HTTPException(status_code=400, detail="invalid expression")
+    try:
+        result = safe_eval(ast.parse(expr, mode="eval"))
+    except (ValueError, SyntaxError, ZeroDivisionError):
+        raise HTTPException(status_code=400, detail="invalid expression")
+    return {"result": str(result)}
 
 
 @app.post("/import-yaml")
