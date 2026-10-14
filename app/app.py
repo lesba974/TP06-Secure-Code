@@ -21,6 +21,7 @@ from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse
 from starlette.middleware.sessions import SessionMiddleware
 from ipaddress import ip_address
+from pathlib import Path
 
 SECRET_KEY = "super-secret-key-123"
 DB_PATH = os.environ.get("DB_PATH", "shop.db")
@@ -123,10 +124,14 @@ def ping(host: str = "127.0.0.1"):
 def hello(name: str = ""):
     return HTMLResponse(f"<h1>Bonjour {name}</h1>")
 
+UPLOAD_PATH = Path(UPLOAD_DIR).resolve()
 
 @app.get("/files/{name:path}")
 def get_file(name: str):
-    return FileResponse(os.path.join(UPLOAD_DIR, name))
+    target = (UPLOAD_PATH / name).resolve()
+    if not target.is_relative_to(UPLOAD_PATH) or not target.is_file():
+        raise HTTPException(status_code=404, detail="not found")
+    return FileResponse(target)
 
 OPS = {
     ast.Add: operator.add,
