@@ -24,6 +24,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
+from fastapi import Depends
+
 
 SECRET_KEY = os.environ["SECRET_KEY"]
 DB_PATH = os.environ.get("DB_PATH", "shop.db")
@@ -198,14 +200,25 @@ def fetch(url: str):
         raise HTTPException(status_code=502, detail="upstream error")
     return PlainTextResponse(r.text[:500])
 
+def current_user(request: Request) -> dict:
+    uid = request.session.get("user_id")
+    row = None
+    if uid is not None:
+        row = db().execute(
+            "SELECT id, username, is_admin FROM users WHERE id = ?", (uid,)
+        ).fetchone()
+    if not row:
+        raise HTTPException(status_code=401, detail="login required")
+    return dict(row)
 
 @app.get("/invoices/{invoice_id}")
-def invoice(invoice_id: int, request: Request):
-    if "user_id" not in request.session:
-        return JSONResponse({"error": "login required"}, status_code=401)
-    row = db().execute("SELECT * FROM invoices WHERE id = ?", (invoice_id,)).fetchone()
+def invoice(invoice_id: int, user: dict = Depends(current_user)):
+    row = db().execute(
+        "SELECT * FROM invoices WHERE id = ? AND owner_id = ?",
+        (invoice_id, user["id"]),
+    ).fetchone()
     if not row:
-        return JSONResponse({"error": "not found"}, status_code=404)
+        raise HTTPException(status_code=404, detail="not found")
     return dict(row)
 
 
