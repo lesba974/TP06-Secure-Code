@@ -8,7 +8,6 @@ import logging
 import os
 import sqlite3
 import subprocess
-import traceback
 import operator
 import html
 import requests
@@ -34,7 +33,7 @@ UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
 logging.INFO
 log = logging.getLogger("minishop")
 
-app = FastAPI(title="MiniShop", debug=True)
+app = FastAPI(title="MiniShop", debug=False)
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, https_only=True, same_site="lax")
 
 def db():
@@ -86,7 +85,8 @@ async def security_headers(request: Request, call_next):
 
 @app.exception_handler(Exception)
 async def handle_error(request: Request, exc: Exception):
-    return HTMLResponse("<pre>" + traceback.format_exc() + "</pre>", status_code=500)
+    log.exception("unhandled error on %s", request.url.path)
+    return JSONResponse({"error": "internal server error"}, status_code=500)
 
 
 @app.get("/health")
