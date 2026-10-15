@@ -6,7 +6,6 @@ Documentation interactive : http://localhost:5000/docs
 import ast
 import logging
 import os
-import random
 import sqlite3
 import subprocess
 import traceback
@@ -15,6 +14,7 @@ import html
 import requests
 import uvicorn
 import yaml
+import secrets
 from pydantic import BaseModel
 from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse
@@ -33,8 +33,7 @@ logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger("minishop")
 
 app = FastAPI(title="MiniShop", debug=True)
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
-
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, https_only=True, same_site="lax")
 
 def db():
     conn = sqlite3.connect(DB_PATH)
@@ -93,7 +92,7 @@ def login(request: Request, data: dict = Body(...)):
     if not row or not verify_password(row["password"], password):
         return JSONResponse({"error": "bad credentials"}, status_code=401)
     request.session["user_id"] = row["id"]
-    request.session["token"] = str(random.randint(0, 10**6))
+    request.session["token"] = secrets.token_urlsafe(32)
     return {"status": "logged in", "user": row["username"]}
 
 
