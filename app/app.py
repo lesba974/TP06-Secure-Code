@@ -29,7 +29,7 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 DB_PATH = os.environ.get("DB_PATH", "shop.db")
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
 
-logging.basicConfig(level=logging.DEBUG)
+logging.INFO
 log = logging.getLogger("minishop")
 
 app = FastAPI(title="MiniShop", debug=True)
@@ -87,7 +87,7 @@ def health():
 @app.post("/login")
 def login(request: Request, data: dict = Body(...)):
     username, password = data["username"], data["password"]
-    log.info(f"login attempt user={username} password={password}")  
+    log.info("login attempt user=%s", username) 
     row = db().execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
     if not row or not verify_password(row["password"], password):
         return JSONResponse({"error": "bad credentials"}, status_code=401)
