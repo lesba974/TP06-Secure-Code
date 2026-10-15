@@ -24,6 +24,7 @@ from urllib.parse import urlparse
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 from fastapi import Depends
+from contextlib import asynccontextmanager
 
 
 SECRET_KEY = os.environ["SECRET_KEY"]
@@ -33,7 +34,22 @@ UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
 logging.INFO
 log = logging.getLogger("minishop")
 
-app = FastAPI(title="MiniShop", debug=False)
+IS_PROD = os.environ.get("APP_ENV", "production") != "development"
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+app = FastAPI(
+    title="MiniShop",
+    debug=False,
+    lifespan=lifespan,
+    docs_url=None if IS_PROD else "/docs",
+    redoc_url=None,
+    openapi_url=None if IS_PROD else "/openapi.json",
+)
+
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, https_only=True, same_site="lax")
 
 def db():
@@ -261,5 +277,4 @@ def boom():
 
 
 if __name__ == "__main__":
-    init_db()
-    uvicorn.run("app:app", host="0.0.0.0", port=5000, reload=True)
+    uvicorn.run("app:app", host="127.0.0.1", port=5000)
