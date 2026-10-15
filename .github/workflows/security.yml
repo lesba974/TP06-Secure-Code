@@ -18,7 +18,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Installer les dépendances
-        run: pip install -r app/requirements.txt pytest bandit pip-audit
+        run: |
+          pip install --require-hashes -r app/requirements.txt
+          pip install pytest bandit pip-audit
       - name: Tests (attaque + fonctionnels)
         env:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
