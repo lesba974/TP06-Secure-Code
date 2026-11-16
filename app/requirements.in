@@ -9,3 +9,4 @@ httpx
 argon2-cffi
 jinja2
 certifi>=2026.10.19
+opentelemetry-api>=1.45.2
